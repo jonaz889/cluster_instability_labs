@@ -1,4 +1,21 @@
-.Rproj.user
+# RStudio
+.Rproj.user/
 .Rhistory
 .RData
 .Ruserdata
+
+# renv
+renv/library/
+renv/local/
+renv/cellar/
+renv/python/
+renv/sandbox/
+renv/staging/
+
+# temporary experiment outputs
+outputs/figs/draft/
+outputs/rds/
+outputs/logs/
+
+# optional
+*.tmp
