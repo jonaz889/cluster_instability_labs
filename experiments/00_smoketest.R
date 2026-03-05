@@ -1,32 +1,22 @@
-# experiments/00_smoketest.R
+# experiments/01_smoketest_logged.R
 rm(list = ls())
 
-# Always run from project root
-# (If you run via Rscript from root or RStudio project, this is fine)
 source("R/hello_fun.R")
+source("R/utils-runlog.R")
 
-run_id <- format(Sys.time(), "%Y%m%d-%H%M%S")
+params <- list(n = 400, centers = 2, nstart = 10)
+seed <- 42
 
-res <- hello_kmeans(seed = 42, n = 400)
+meta <- start_run("smoketest", params = params, seed = seed)
 
-# --- save result object (ignored by git) ---
-saveRDS(res, file = file.path("outputs", "rds", paste0("smoketest_", run_id, ".rds")))
+res <- hello_kmeans(seed = seed, n = params$n)
 
-# --- save a log (ignored by git) ---
-writeLines(c(
-  paste("run_id:", run_id),
-  paste("seed:", res$seed),
-  paste("n:", res$n),
-  "",
-  "sessionInfo():",
-  paste(capture.output(sessionInfo()), collapse = "\n")
-), con = file.path("outputs", "logs", paste0("smoketest_", run_id, "_session.txt")))
+# save result
+rds_path <- save_result(meta, res)
+cat("Saved RDS:", rds_path, "\n")
 
-# --- save a draft figure (ignored by git) ---
-png(file.path("outputs", "figs", "draft", paste0("smoketest_", run_id, ".png")),
-    width = 1200, height = 900)
+# save draft figure
+png(draft_fig_path(meta, "clusters.png"), width = 1200, height = 900)
 plot(res$X, col = res$km$cluster, pch = 16, cex = 0.7,
-     main = paste("Smoke test kmeans | seed =", res$seed))
+     main = paste("Smoke test | seed =", seed, "| git =", meta$git_hash))
 dev.off()
-
-cat("OK: wrote outputs for run_id =", run_id, "\n")

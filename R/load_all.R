@@ -1,0 +1,6 @@
+source("R/utils-seed.R")
+source("R/data-generators.R")
+source("R/metrics.R")
+source("R/align-labels.R")
+source("R/kmeans-runners.R")
+source("R/plots.R")
