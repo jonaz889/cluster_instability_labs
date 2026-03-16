@@ -17,5 +17,8 @@ outputs/figs/draft/
 outputs/rds/
 outputs/logs/
 
+# Archive
+archive/
+
 # optional
 *.tmp

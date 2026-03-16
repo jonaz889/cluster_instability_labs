@@ -1,23 +1,29 @@
 # R/utils-runlog.R
 
+
+# Creates a unique run ID based on the exact current time.
 run_id_now <- function() {
   format(Sys.time(), "%Y%m%d-%H%M%S")
 }
 
+# Return the short Git hash of the current repository.
 git_hash <- function() {
-  # Works if git is installed and repo exists
-  out <- tryCatch(system("git rev-parse --short HEAD", intern = TRUE), error = function(e) NA_character_)
+  out <- tryCatch(system("git rev-parse --short HEAD", intern = TRUE), 
+                  error = function(e) NA_character_)
   if (length(out) == 0) NA_character_ else out[1]
 }
 
+# Create directories if they do not already exist
 ensure_dirs <- function(paths) {
   for (p in paths) if (!dir.exists(p)) dir.create(p, recursive = TRUE)
 }
 
+# Save session information for reproducibility
 write_session <- function(path) {
   writeLines(capture.output(sessionInfo()), con = path)
 }
 
+# Save parameter values in a simple text format
 write_params <- function(path, params) {
   # params should be a named list
   txt <- unlist(Map(function(nm, val) paste0(nm, ": ", paste(val, collapse = ",")),
@@ -25,8 +31,9 @@ write_params <- function(path, params) {
   writeLines(txt, con = path)
 }
 
-start_run <- function(experiment_name, params = list(), seed = NULL,
+start_run <- function(experiment_name, params = list(), seed = NA_integer_,
                       outputs_dir = "outputs") {
+  
   ensure_dirs(c(
     file.path(outputs_dir, "logs"),
     file.path(outputs_dir, "rds"),
@@ -46,23 +53,25 @@ start_run <- function(experiment_name, params = list(), seed = NULL,
     params = params
   )
   
-  # write log files
+  # meta log
   writeLines(
     c(
       paste0("run_id: ", rid),
       paste0("experiment: ", experiment_name),
       paste0("time: ", meta$time),
-      paste0("seed: ", ifelse(is.null(seed), "NA", seed)),
+      paste0("seed: ", ifelse(is.na(seed), "NA", seed)),
       paste0("git_hash: ", ifelse(is.na(gh), "NA", gh))
     ),
     con = file.path(outputs_dir, "logs", paste0(experiment_name, "_", rid, "_meta.txt"))
   )
   
+  # params log
   write_params(
     file.path(outputs_dir, "logs", paste0(experiment_name, "_", rid, "_params.txt")),
     c(list(seed = seed), params)
   )
   
+  # session log
   write_session(
     file.path(outputs_dir, "logs", paste0(experiment_name, "_", rid, "_session.txt"))
   )
