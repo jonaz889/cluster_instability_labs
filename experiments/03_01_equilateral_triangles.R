@@ -7,7 +7,7 @@ params <- list(
   n = 300,
   side_length = 20,
   pull_max = 5,
-  exper_amount = 200,
+  n_dist = 200,
   kmeans_nstart = 20
 )
 
@@ -24,7 +24,7 @@ out <- bin_clusterings_by_ari(
     n = params$n,
     side_length = params$side_length,
     pull_max = params$pull_max,
-    exper_amount = params$exper_amount,
+    n_dist = params$n_dist,
     kmeans_nstart = params$kmeans_nstart
   )
 )

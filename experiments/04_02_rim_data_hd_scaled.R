@@ -1,98 +1,91 @@
 rm(list = ls())
-
 source("R/load_all.R")
-library("bench")
 
 params <- list(
-  n = 1000,
-  ds = c(2,4,8,16,32,64),
+  n = 500,#1000,
+  ds = c(2, 4,32),#, 16, 32, 64),
   ks = 1:10,
   reps = 100,
-  kmeans_nstart = 25
-)
+  kmeans_nstart = 10
+  )
 
 seed <- 1
-set.seed(1)
 
 meta <- start_run(
-  "exp_04_02_rim_resampling_many_d",
+  "exp_04_02_rim_many_d",
   params = params,
   seed = seed
 )
-res_bench <- bench::mark(
-  run_rim_reps_over_d(
+
+
+runs_by_d_s1 <- run_rim_reps_over_d_scaled(
     ds = params$ds,
     n = params$n,
     ks = params$ks,
     nstart = params$kmeans_nstart,
     reps = params$reps,
-    seed = seed
-  ),
-  iterations = 5,
-  check = FALSE
-)
+    seed = seed,
+    scale_func=std_data_1
+  )
 
-res_bench
+runs_by_d_s2 <- run_rim_reps_over_d_scaled(
+    ds = params$ds,
+    n = params$n,
+    ks = params$ks,
+    nstart = params$kmeans_nstart,
+    reps = params$reps,
+    seed = seed,
+    scale_func=std_data_2
+  )
 
-runs_by_d <- run_rim_reps_over_d(
+runs_by_d_s3 <- run_rim_reps_over_d_scaled(
   ds = params$ds,
   n = params$n,
   ks = params$ks,
   nstart = params$kmeans_nstart,
   reps = params$reps,
-  seed = seed
+  seed = seed,
+  scale_func=std_data_3
 )
 
-# one summary per dimension
-summary_list <- lapply(runs_by_d, rim_reps_sum)
+summary_by_d_s1 <- rim_reps_over_d_sum(runs_by_d_s1)
+summary_across_d_s1 <- across_dimension_means_sum(summary_by_d_s1)
+summary_by_d_s2 <- rim_reps_over_d_sum(runs_by_d_s2)
+summary_across_d_s2 <- across_dimension_means_sum(summary_by_d_s2)
+summary_by_d_s3 <- rim_reps_over_d_sum(runs_by_d_s3)
+summary_across_d_s3 <- across_dimension_means_sum(summary_by_d_s3)
 
-# attach dimension column and bind together
-summary_by_d <- do.call(
-  rbind,
-  lapply(seq_along(summary_list), function(i) {
-    tbl <- summary_list[[i]]
-    tbl$d <- params$ds[i]
-    tbl
-  })
-)
+pdf(make_fig_path(meta, "mean_ci_scaled.pdf"), width = 8, height = 6)
+par(mfrow=c(1,1))
+plot_rim_ci(summary_by_d_s1[summary_by_d_s1$d==2,], ylim=c(0,0.5))
+plot_rim_ci_add_line(summary_by_d_s2[summary_by_d_s2$d==2,],  col=2)
+plot_rim_ci_add_line(summary_by_d_s3[summary_by_d_s3$d==2,], col = 3)
 
-# CI across dimension-specific means
-summary_across_d <- across_dimension_means_sum(summary_by_d)
+plot_rim_ci_add_line(summary_by_d_s1[summary_by_d_s1$d==4,],  col=1)
+plot_rim_ci_add_line(summary_by_d_s2[summary_by_d_s2$d==4,],  col=2)
+plot_rim_ci_add_line(summary_by_d_s3[summary_by_d_s3$d==4,], col = 3)
 
-# save combined table
-write.csv(
-  summary_by_d,
-  file.path(
-    "outputs", "tables",
-    paste0(meta$experiment, "_", meta$run_id, "_summary_by_d.csv")
-  ),
-  row.names = FALSE
-)
+plot_rim_ci_add_line(summary_by_d_s1[summary_by_d_s1$d==32,],  col=1)
+plot_rim_ci_add_line(summary_by_d_s2[summary_by_d_s2$d==32,],  col=2)
+plot_rim_ci_add_line(summary_by_d_s3[summary_by_d_s3$d==32,], col = 3)
 
-# save across-dimension summary table
-write.csv(
-  summary_across_d,
-  file.path(
-    "outputs", "tables",
-    paste0(meta$experiment, "_", meta$run_id, "_summary_across_d.csv")
-  ),
-  row.names = FALSE
-)
-
-# plot all mean curves in one figure
-pdf(draft_fig_path(meta, "rim_mean_curves_by_d.pdf"), width = 8, height = 6)
-plot_rim_curves_by_d(summary_by_d)
+legend("topleft", legend=c("id","scale","normalize"),
+       col=c(1,2,3), lwd=2, bty="n")
 dev.off()
 
-# plot CI across dimension-specific means
-pdf(draft_fig_path(meta, "rim_ci_across_d.pdf"), width = 8, height = 6)
-plot_overall_dimension_mean_ci(summary_across_d)
+pdf(make_fig_path(meta, "rim_ci_across_d.pdf"), width = 8, height = 6)
+par(mfrow=c(1,2))
+plot_overall_dimension_mean_ci(summary_across_d_s2)
+plot_overall_dimension_mean_ci(summary_across_d_s3)
 dev.off()
 
 res <- list(
-  runs_by_d = runs_by_d,
-  summary_by_d = summary_by_d,
-  summary_across_d = summary_across_d,
+  runs_by_d_s2 = runs_by_d_s2,
+  runs_by_d_s3 = runs_by_d_s3,
+  summary_by_d_s2 = summary_by_d_s2,
+  summary_by_d_s3 = summary_by_d_s3,
+  summary_across_d_s2 = summary_across_d_s2,
+  summary_across_d_s3 = summary_across_d_s3,
   params = params
 )
 

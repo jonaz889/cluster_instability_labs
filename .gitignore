@@ -19,6 +19,7 @@ outputs/logs/
 
 # Archive
 archive/
+R/legacy
 
 # optional
 *.tmp

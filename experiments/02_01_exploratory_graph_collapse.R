@@ -4,10 +4,10 @@ source("R/load_all.R")
 
 params <- list(
   sigmas = c(1/2, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5),
-  n = 1000,
+  n =  1000,
   dist_min = 0,
   dist_max = 35,
-  exper_amount = 4000,
+  n_dist = 200,#4000,
   reps = 1,
   kmeans_nstart = 25
 )
@@ -18,13 +18,13 @@ seed <- 2
 
 meta <- start_run("exp_02_01", params = params, seed = seed)
 
-runs <- e1_sigma_sweep(
+runs <- run_kmeans_separation_sigmas(
   sigmas = params$sigmas,
   seed = seed,
   n = params$n,
   dist_min = params$dist_min,
   dist_max = params$dist_max,
-  exper_amount = params$exper_amount,
+  n_dist = params$n_dist,
   kmeans_nstart = params$kmeans_nstart,
   reps = params$reps,
   keep_all = FALSE
@@ -35,19 +35,17 @@ res <- list(
   params = params
 )
 
-rds_path <- save_result(meta, res)
-cat("Saved RDS:", rds_path, "\n")
 
 # misclass. vs dist and misclass, vs dist/sigma
 pdf(
-  draft_fig_path(meta, "02_01_exploratory_misclas_vs_dist.pdf"),
+  make_fig_path(meta, "02_01_exploratory_misclas_vs_dist.pdf"),
   width = 10,
   height = 4.5
 )
 
 par(mfrow = c(1, 2))
 plot_mis_dist(runs[[1]])
-plot_mis_dist_over_variance(runs[[1]], xlim = c(0, 7))
+plot_mis_dist_over_sigma(runs[[1]], xlim = c(0, 7))
 
 # Where misclassification first hits 0 for each sigma
 zero_mis_points <- sapply(runs[[1]], function(run) {
@@ -77,3 +75,34 @@ write.csv(
   ),
   row.names = FALSE
 )
+
+
+pdf(
+  make_fig_path(meta, "02_01_exploratory_misclas_vs_dist.pdf"),
+  width = 10,
+  height = 4.5
+)
+
+par(mfrow = c(1, 2))
+
+plot(NULL,
+     xlim = c(params$dist_min, params$dist_max),
+     ylim = c(0, 0.5),
+     xlab = expression(d(mu[1], mu[2])),
+     ylab = "Misclassification rate",
+     main = "Misclassification vs distance")
+
+for (run in runs[[1]]) {
+  lines(run$dist, run$mis_rate, lwd = 2, col=1)
+  lines(run$dist,
+        theoretic_misclass(run$dist, run$sigma),
+        lwd = 2, col=2)
+}
+
+legend("topright",
+       legend = c("Empirical", "Theoretical"),
+       col = c(1,2),
+       lwd = 2,
+       bty = "n")
+rds_path <- save_result(meta, res)
+cat("Saved RDS:", rds_path, "\n")

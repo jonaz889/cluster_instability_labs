@@ -18,7 +18,7 @@ params <- list(
   n = n,
   dist_min = 0,
   dist_max = 7 * max(sigmas),
-  exper_amount = 500,
+  n_dist = 500,
   reps = 500,
   kmeans_nstart = 1
 )
@@ -27,7 +27,7 @@ meta <- start_run("exp_02_02_kmeans_variance", params = params, seed = seed)
 
 sigma_runs <- lapply(sigmas, function(s) {
   
-  rep_runs <- e1_run_sigma_kmeans_reps(
+  rep_runs <- run_kmeans_separation_with_reps(
     sigma = s,
     x_r = x_r,
     y_r = y_r,
@@ -35,7 +35,7 @@ sigma_runs <- lapply(sigmas, function(s) {
     n = params$n,
     dist_min = params$dist_min,
     dist_max = params$dist_max,
-    exper_amount = params$exper_amount,
+    n_dist = params$n_dist,
     kmeans_nstart = params$kmeans_nstart,
     seed = seed + 1 * s
   )
@@ -47,7 +47,7 @@ names(sigma_runs) <- paste0("sigma_", sigmas)
 
 # CI plots for each sigma
 pdf(
-  draft_fig_path(meta, "sigma_ci_curves.pdf"),
+  make_fig_path(meta, "sigma_ci_curves.pdf"),
   width = 12,
   height = 4.5
 )
@@ -77,7 +77,7 @@ write.csv(
   row.names = FALSE
 )
 
-pdf("outputs/figs/draft/sd_curves_exp_02_02.pdf", width=7, height=5)
+pdf(make_fig_path(meta, "sd_miss_rate.pdf"), width=7, height=5)
 
 plot(NULL,
      xlim = c(0,7),

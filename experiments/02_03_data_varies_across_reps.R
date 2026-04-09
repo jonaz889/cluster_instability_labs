@@ -9,8 +9,8 @@ params <- list(
   n = 500,
   dist_min = 0,
   dist_max = 7*max(sigmas),
-  exper_amount = 500,
-  reps = 200,
+  n_dist = 500,
+  reps = 200,#200,
   kmeans_nstart = 20
 )
 
@@ -18,13 +18,13 @@ seed <- 1
 
 meta <- start_run("exp_02_03_data_variance", params = params, seed = seed)
 
-runs <- e1_sigma_sweep(
+runs <- run_kmeans_separation_sigmas_rand_across_sigmas(
   sigmas = params$sigmas,
   seed = seed,
   n = params$n,
   dist_min = params$dist_min,
   dist_max = params$dist_max,
-  exper_amount = params$exper_amount,
+  n_dist = params$n_dist,
   kmeans_nstart = params$kmeans_nstart,
   reps = params$reps,
   keep_all = FALSE
@@ -35,10 +35,83 @@ sigma_runs <- summarise_mis_ci_over_reps(runs)
 names(sigma_runs) <- paste0("sigma_", sigmas)
 
 
+mean_runs_for_plot <- lapply(sigma_runs, function(x) {
+  list(
+    sigma = x$sigma[1],
+    dist = x$dist,
+    mis_rate = x$mean
+  )
+})
+
+
+## Plot misclassification vs distance
+pdf(
+  make_fig_path(meta, "misclass_vs_dist_theo.pdf"),
+  width = 10,
+  height = 6
+)
+par(mfrow=c(1,1))
+plot_mis_dist(mean_runs_for_plot)
+x_theory <- seq(0, 20, length.out = 5000)
+lines(x_theory, theory_misclassification(x_theory, 1),
+      lty = 2, lwd = 3, col = "black")
+lines(x_theory, theory_misclassification(x_theory, 2),
+      lty = 2, lwd = 3, col = "black")
+lines(x_theory, theory_misclassification(x_theory, 3),
+      lty = 2, lwd = 3, col = "black")
+legend("right",
+       legend = c("Theory"),
+       col = c("black"),
+       lwd = c(3),
+       lty = c(2),
+       cex = 0.9,
+       bty = "n")
+dev.off()
+## Plot misclassification vs distance/variance
+pdf(
+  make_fig_path(meta, "misclass_vs_dist_over_sigma_theo.pdf"),
+  width = 10,
+  height = 6
+)
+
+plot_mis_dist_over_sigma(mean_runs_for_plot, xlim=c(0,7))
+x_theory <- seq(0, 7, length.out = 500)
+lines(x_theory, theory_misclassification(x_theory, 1),
+      lty = 2, lwd = 3, col = "black")
+legend("right",
+       legend = c("Theory"),
+       col = c("black"),
+       lwd = c(3),
+       lty = c(2),
+       cex = 0.9,
+       bty = "n")
+
+dev.off()
+
+
+mean_minus_theory_for_plot <- lapply(sigma_runs, function(x) {
+  list(
+    sigma = x$sigma[1],
+    dist = x$dist,
+    mis_rate = x$mean - x$theory
+  )
+})
+
+pdf(
+  make_fig_path(meta, "misclass_vs_dist_over_sigma_error_theo.pdf"),
+  width = 10,
+  height = 6
+)
+
+plot_mis_dist_over_sigma(mean_minus_theory_for_plot, xlim = c(0, 7))
+abline(h = 0, lty = 2, lwd = 2)
+which.max(mean_minus_theory_for_plot$sigma_1$mis_rate)
+dev.off()
+
 #  CI plot for each sigma
 for (nm in names(sigma_runs)) {
   pdf(
-    draft_fig_path(meta, paste0(nm, "_ci_curve.pdf")),
+    make_fig_path(meta, paste0(nm, "_ci_curve.pdf")),
     width = 10,
     height = 6
   )
@@ -51,7 +124,7 @@ for (nm in names(sigma_runs)) {
 #zoomed CI plot for each sigma
 for (nm in names(sigma_runs)) {
   pdf(
-    draft_fig_path(meta, paste0(nm, "_ci_curve_zoomed.pdf")),
+    make_fig_path(meta, paste0(nm, "_ci_curve_zoomed.pdf")),
     width = 12,
     height = 4.5
   )
@@ -66,7 +139,7 @@ for (nm in names(sigma_runs)) {
 
 #SD all sigmas together
 pdf(
-  draft_fig_path(meta, "sigma_sd_curves_panel.pdf"),
+  make_fig_path(meta, "sigma_sd_vs_dist_over_sigma.pdf"),
   width = 10,
   height = 6
 )
